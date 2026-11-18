@@ -60,6 +60,59 @@
   const lMax = Math.log10(Math.max(...highs));
   const pos = (v) => (100 * (Math.log10(Math.max(v, 1)) - lMin)) / (lMax - lMin || 1);
 
+  // ---- the radar scope: one dot per ranked protocol -------------------------------------------------
+  // Direction is the category (each category owns a slice as wide as its share of rows), distance from the
+  // centre is the implied value on a log scale. Positions come from the data only, so they never move when
+  // a filter changes: filtered-out dots just dim.
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const SC = { c: 150, in: 22, out: 118 };
+  const scope = (function () {
+    const key = (r) => r.category || 'No category';
+    const counts = new Map();
+    R.rows.forEach((r) => counts.set(key(r), (counts.get(key(r)) || 0) + 1));
+    const cats = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a) || a.localeCompare(b));
+    const vals = R.rows.map((r) => Math.log10(r.implied_value_usd));
+    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const rad = (v) => SC.in + ((Math.log10(v) - lo) / (hi - lo || 1)) * (SC.out - SC.in);
+    const pts = new Map();
+    const seps = [];
+    let start = -Math.PI / 2;
+    for (const c of cats) {
+      const mem = R.rows.filter((r) => key(r) === c);
+      const width = (2 * Math.PI * mem.length) / R.rows.length;
+      mem.forEach((r, i) => {
+        const a = start + ((i + 0.5) / mem.length) * width;
+        pts.set(r.slug, [SC.c + rad(r.implied_value_usd) * Math.cos(a), SC.c + rad(r.implied_value_usd) * Math.sin(a)]);
+      });
+      seps.push(start);
+      start += width;
+    }
+    return { pts, seps, rad, lo, hi };
+  })();
+
+  function drawScope(list) {
+    const on = new Set(list.map((r) => r.slug));
+    let s = '<svg viewBox="0 0 300 300" focusable="false">';
+    for (const a of scope.seps) s += `<line class="axis" x1="${(SC.c + SC.in * Math.cos(a)).toFixed(1)}" y1="${(SC.c + SC.in * Math.sin(a)).toFixed(1)}" x2="${(SC.c + SC.out * Math.cos(a)).toFixed(1)}" y2="${(SC.c + SC.out * Math.sin(a)).toFixed(1)}"/>`;
+    s += `<circle class="ring" cx="${SC.c}" cy="${SC.c}" r="${SC.in}"/><circle class="ring outer" cx="${SC.c}" cy="${SC.c}" r="${SC.out + 6}"/>`;
+    let labels = '';
+    for (let d = Math.ceil(scope.lo); d <= Math.floor(scope.hi); d++) {
+      const r = scope.rad(Math.pow(10, d));
+      s += `<circle class="ring" cx="${SC.c}" cy="${SC.c}" r="${r.toFixed(1)}"/>`;
+      labels += `<text class="lbl" x="${SC.c}" y="${(SC.c + r + 3).toFixed(1)}" text-anchor="middle">${money(Math.pow(10, d))}</text>`;
+    }
+    const dot = (r, dim) => {
+      const p = scope.pts.get(r.slug);
+      return `<circle class="b ${r.confidence}${dim ? ' dim' : ''}" data-slug="${esc(r.slug)}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r.in_watchlist ? 3.6 : 2.6}"><title>${esc(r.name)}, ${money(r.implied_value_usd)}</title></circle>`;
+    };
+    s += R.rows.filter((r) => !on.has(r.slug)).map((r) => dot(r, true)).join('');
+    s += R.rows.filter((r) => on.has(r.slug)).map((r) => dot(r, false)).join('');
+    const sp = scope.pts.get(S.sel);
+    if (sp && S.view === 'radar') s += `<circle class="sel" cx="${sp[0].toFixed(1)}" cy="${sp[1].toFixed(1)}" r="7"/>`;
+    $('scope').innerHTML = s + labels + '</svg>';
+    $('scopebox').hidden = S.view !== 'radar';
+  }
+
   const VIEWS = {
     radar: { label: 'Radar', rows: R.rows, note: 'Protocols whose record carries no token, ranked by implied value.' },
     live: { label: 'Live token', rows: R.live, note: 'Protocols whose token already trades. Shown at the market cap, never ranked by the model.' },
@@ -136,7 +189,7 @@
       case 'tvl': return h('td', { class: 'num' }, money(r.tvl_usd));
       case 'change': return h('td', { class: 'num ' + (r.change_7d > 0 ? 'up' : r.change_7d < 0 ? 'down' : '') }, pct(r.change_7d));
       case 'age': return h('td', { class: 'num' }, age(r.age_days));
-      case 'implied': return h('td', { class: 'num' }, money(r.implied_value_usd), h('span', { class: 'range', title: `${money(r.implied_low_usd)} to ${money(r.implied_high_usd)}` }, h('i', { style: `left:${pos(r.implied_low_usd).toFixed(1)}%;width:${Math.max(2, pos(r.implied_high_usd) - pos(r.implied_low_usd)).toFixed(1)}%` }), h('b', { style: `left:${pos(r.implied_value_usd).toFixed(1)}%` })));
+      case 'implied': return h('td', { class: 'num val' }, money(r.implied_value_usd), h('span', { class: 'range', title: `${money(r.implied_low_usd)} to ${money(r.implied_high_usd)}` }, h('i', { style: `left:${pos(r.implied_low_usd).toFixed(1)}%;width:${Math.max(2, pos(r.implied_high_usd) - pos(r.implied_low_usd)).toFixed(1)}%` }), h('b', { style: `left:${pos(r.implied_value_usd).toFixed(1)}%` })));
       case 'conf': return h('td', null, h('span', { class: 'conf ' + r.confidence }, r.confidence));
       case 'mcap': return h('td', { class: 'num' }, money(r.mcap_usd));
       case 'symbol': return h('td', null, r.symbol || 'n/a');
@@ -218,6 +271,7 @@
     const list = visible();
     if (!list.some((r) => r.slug === S.sel)) S.sel = list.length ? list[0].slug : '';
     drawBoard(list);
+    drawScope(list);
     drawDetail(list.find((r) => r.slug === S.sel));
     $('board').removeAttribute('aria-busy');
     save();
@@ -259,6 +313,14 @@
       const again = $('board').querySelector(`tr[data-slug="${CSS.escape(S.sel)}"]`);
       if (again) again.focus({ preventScroll: true });
     }
+  });
+  $('scope').addEventListener('click', (e) => {
+    const dot = e.target.closest('[data-slug]');
+    if (!dot) return;
+    S.sel = dot.dataset.slug;
+    draw();
+    const row = $('board').querySelector(`tr[data-slug="${CSS.escape(S.sel)}"]`);
+    if (row) row.scrollIntoView({ block: 'nearest' });
   });
   $('board').addEventListener('keydown', (e) => {
     const tr = e.target.closest('tr[data-slug]');

@@ -9,11 +9,15 @@
 <body>
 <a class="skip" href="#board">Skip to the board</a>
 <header class="top">
-  <div>
+  <div class="intro">
     <h1>Token launch radar</h1>
     <p id="sub" class="muted"></p>
+    <div class="tabs" id="tabs" role="group" aria-label="Board view"></div>
   </div>
-  <div class="tabs" id="tabs" role="group" aria-label="Board view"></div>
+  <figure class="scope" id="scopebox">
+    <div id="scope" role="img" aria-label="Radar scope: every ranked protocol as a dot, distance from the centre is implied value, direction is category"></div>
+    <figcaption class="muted">Distance from the centre is implied value, direction is category, colour is confidence. Click a dot to open it.</figcaption>
+  </figure>
 </header>
 <main class="layout">
   <section class="pane" aria-label="Board">
