@@ -8,10 +8,10 @@ A dashboard that ranks DeFi protocols whose DefiLlama record shows no token, by 
 
 The value is an estimate and nothing more. It comes only from numbers in the snapshot:
 
-- **Peer ratio.** The median market cap to TVL of other protocols in the same category whose token trades. Categories with fewer than 3 priced peers fall back to the median of all categories. Wrapped, staked, bridged and exchange products are left out of the peer set.
+- **Peer ratio.** The median market cap to TVL of other protocols in the same category whose token trades. Only peers with at least $5M of TVL count, and the ratio is kept between 0.05 and 5. A category with fewer than 3 priced peers uses the median of all categories, and one with fewer than 5 is pulled toward it. Wrapped, staked, bridged and exchange products are left out of the peer set.
 - **Growth.** The 7 day TVL change, capped at -30% to +60%, at half weight.
 - **Time without a token.** Up to x1.3 for a protocol listed for a year or more.
-- **Chains.** A small bonus for each extra chain.
+- **Chains.** 3% for each extra chain, up to 5 extra.
 - **Curators and allocators** are halved, because their TVL is also counted in the protocols they deposit into.
 
 Each row also carries a low and high value, a confidence label, and a 7 step farm plan with costs and times. Gas costs come from a small fixed table, not a live feed. No protocol name is special cased. The page says a protocol "records no token", because the record can be wrong or incomplete.
