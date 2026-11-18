@@ -42,7 +42,14 @@ if (!existsSync(inputFile)) {
 }
 const out = arg('output', process.env.MAKEFUN_OUTPUT_DIR ?? '/output');
 
-const snapshot = parseSnapshot(readFileSync(inputFile, 'utf8'));
+let snapshot: ReturnType<typeof parseSnapshot>;
+try {
+  snapshot = parseSnapshot(readFileSync(inputFile, 'utf8'));
+} catch (error) {
+  // A snapshot the model cannot read is a clean exit 2 with the reason, never a stack trace.
+  process.stderr.write(`token radar: ${error instanceof Error ? error.message : String(error)}\n`);
+  process.exit(2);
+}
 const { board, radar } = buildRadar(snapshot);
 const issue = boardIssue(board, snapshot);
 if (issue !== null) {
@@ -75,9 +82,19 @@ if (shots.length < 3) {
   process.stderr.write(`token radar: screenshots/ holds ${shots.length} image${shots.length === 1 ? '' : 's'}: hand in 3, the board, a detail view and a filtered view\n`);
   process.exit(1);
 }
+if (shots.length > SCREENSHOT_CAPS.max) {
+  // The scorer refuses a fifth image outright, so say so here instead of failing only on the server.
+  process.stderr.write(`token radar: screenshots/ holds ${shots.length} images: the scorer takes at most ${SCREENSHOT_CAPS.max}\n`);
+  process.exit(1);
+}
 for (const name of shots) {
   if (!IMAGE_NAME.test(name)) {
     process.stderr.write(`token radar: screenshots/${name}: a name is letters, digits and . _ -, 1 to 128 characters\n`);
+    process.exit(1);
+  }
+  const bytes = statSync(join(out, 'screenshots', name)).size;
+  if (bytes > SCREENSHOT_CAPS.max_bytes) {
+    process.stderr.write(`token radar: screenshots/${name} is ${bytes} bytes: the scorer takes at most ${SCREENSHOT_CAPS.max_bytes} per image\n`);
     process.exit(1);
   }
 }
@@ -86,6 +103,6 @@ for (const name of shots) {
 writeFileSync(join(out, 'dossier.json'), buildDossier(out, { text_max_bytes: TEXT_MAX_BYTES, screenshots: SCREENSHOT_CAPS, dashboard: { max_files: 400, max_bytes: 4_194_304 } }));
 
 process.stdout.write(
-  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows scored (${radar.early_size} early, ${radar.live_size} live set aside)\n` +
+  `token radar: ${snapshot.protocols.length} protocols, ${snapshot.watchlist.length} on the watchlist, ${board.length} rows ranked by ${radar.model_version} (${radar.early_size} below the floor), ${radar.live.length} live-token and ${radar.unclear.length} token-unclear protocols set aside\n` +
     `token radar: wrote ${join(out, 'board.json')}, ${join(out, 'data.js')}, ${join(out, 'dashboard')} (3 files), ${join(out, 'screenshots')} (${shots.length} images) and ${join(out, 'dossier.json')}\n`,
 );
