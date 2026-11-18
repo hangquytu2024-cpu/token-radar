@@ -3,12 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar: pre-token protocols ranked by implied value</title>
+<title>Token launch radar: protocols that record no token, ranked by implied value</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <a class="skip" href="#board">Skip to the board</a>
-<main id="board" tabindex="-1" aria-busy="true"></main>
+<header class="top">
+  <div>
+    <h1>Token launch radar</h1>
+    <p id="sub" class="muted"></p>
+  </div>
+  <div class="tabs" id="tabs" role="group" aria-label="Board view"></div>
+</header>
+<main class="layout">
+  <section class="pane" aria-label="Board">
+    <form id="filters" class="filters" autocomplete="off" aria-label="Filters"></form>
+    <p id="count" class="muted count" aria-live="polite"></p>
+    <div class="tablewrap" id="board" tabindex="-1"></div>
+  </section>
+  <aside id="detail" class="detail" aria-label="Protocol detail" aria-live="polite"></aside>
+</main>
+<section id="method" class="method" aria-label="How the value is built"></section>
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>
