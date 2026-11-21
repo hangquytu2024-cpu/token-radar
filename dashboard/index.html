@@ -3,31 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token launch radar: protocols that record no token, ranked by implied value</title>
+<title>Token launch radar: protocols that record no token, valued and tested held-out</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <a class="skip" href="#board">Skip to the board</a>
 <header class="top">
-  <div class="intro">
-    <h1>Token launch radar</h1>
-    <p id="sub" class="muted"></p>
-    <div class="tabs" id="tabs" role="group" aria-label="Board view"></div>
-  </div>
-  <figure class="scope" id="scopebox">
-    <div id="scope" role="img" aria-label="Radar scope: every ranked protocol as a dot, distance from the centre is implied value, direction is category"></div>
-    <figcaption class="muted">Distance from the centre is implied value, direction is category, colour is confidence. Click a dot to open it.</figcaption>
-  </figure>
+  <h1>Token launch radar</h1>
+  <p id="sub" class="muted"></p>
 </header>
+<section id="formula" class="formula" aria-label="The formula"></section>
+<section id="kpis"class="kpis" aria-label="Headline figures"></section>
+<section id="acct" class="panel" aria-label="Every protocol read, accounted for"></section>
+<section id="evidence" class="evidence" aria-label="Out-of-sample evidence"></section>
+<nav class="bar" aria-label="View and controls">
+  <div class="tabs" id="tabs" role="group" aria-label="Board view"></div>
+  <form id="controls" class="controls" autocomplete="off" aria-label="Plan controls"></form>
+</nav>
+<form id="filters" class="filters" autocomplete="off" aria-label="Filters"></form>
 <main class="layout">
   <section class="pane" aria-label="Board">
-    <form id="filters" class="filters" autocomplete="off" aria-label="Filters"></form>
     <p id="count" class="muted count" aria-live="polite"></p>
     <div class="tablewrap" id="board" tabindex="-1"></div>
   </section>
   <aside id="detail" class="detail" aria-label="Protocol detail" aria-live="polite"></aside>
 </main>
-<section id="method" class="method" aria-label="How the value is built"></section>
+<section id="method" class="panel method" aria-label="Method"></section>
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>
